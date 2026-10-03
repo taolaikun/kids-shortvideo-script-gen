@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>萌娃短视频脚本生成器 · Kids Short-Video Script Generator</title>
+<meta name="description" content="输入主题，一键生成 15 秒萌娃短视频脚本：AI 视频提示词 + 台词表 + 秒级节拍表。">
+<style>
+  :root {
+    --c-primary: #3C9DFF;
+    --c-primary-dark: #2A6FC4;
+    --c-ink: #2F3032;
+    --c-sub: #6B7280;
+    --c-line: #E4EBF4;
+    --c-bg: #F5F8FC;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--c-bg);
+    color: var(--c-ink);
+    line-height: 1.6;
+    padding: 32px 20px 64px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 8px; }
+  header p { font-size: 14px; color: var(--c-sub); }
+
+  .panel {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(42, 111, 196, 0.07);
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--c-ink); }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--c-line);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--c-ink);
+    background: #fff;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--c-primary);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 24px;
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-main { background: var(--c-primary); color: #fff; }
+  .btn-main:hover { background: var(--c-primary-dark); }
+  .btn-ghost { background: #EEF4FB; color: var(--c-primary-dark); }
+  .btn-ghost:hover { background: #E0EDFA; }
+
+  .out-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--c-line);
+  }
+  .out-head h2 { font-size: 16px; font-weight: 700; }
+  .out-head .meta { font-size: 12px; color: var(--c-sub); }
+
+  .block { margin-bottom: 22px; }
+  .block:last-child { margin-bottom: 0; }
+  .block h3 {
+    font-size: 14px; font-weight: 700; color: var(--c-primary-dark);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .block h3::before {
+    content: ''; width: 3px; height: 14px; border-radius: 2px;
+    background: var(--c-primary);
+  }
+  .block .copy {
+    margin-left: auto; font-size: 11px; font-weight: 500; color: var(--c-primary);
+    background: #EEF4FB; border: none; padding: 4px 12px; border-radius: 100px;
+    cursor: pointer; font-family: inherit;
+  }
+  .block .copy:hover { background: #E0EDFA; }
+
+  pre {
+    background: #F8FAFD; border: 1px solid var(--c-line); border-radius: 10px;
+    padding: 14px 16px; font-size: 13px; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-word;
+    font-family: 'SF Mono', Consolas, 'Courier New', monospace;
+    color: #2C3E50;
+  }
+  .en pre { background: #F4F9FF; color: #2A4A6B; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--c-line); }
+  th { font-weight: 700; color: var(--c-sub); font-size: 12px; }
+  td:first-child { font-weight: 600; color: var(--c-primary-dark); white-space: nowrap; }
+
+  .empty { text-align: center; padding: 48px 20px; color: var(--c-sub); font-size: 14px; }
+
+  footer { text-align: center; margin-top: 32px; font-size: 12px; color: #A8B4C4; }
+  footer a { color: var(--c-primary); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    body { padding: 20px 14px 48px; }
+    header h1 { font-size: 21px; }
+    .panel { padding: 18px; }
+    pre { font-size: 12px; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>萌娃短视频脚本生成器</h1>
+    <p>输入主题，一键生成 15 秒脚本 · 视频提示词 + 台词表 + 节拍表</p>
+  </header>
+
+  <div class="panel">
+    <div class="grid">
+      <div>
+        <label for="theme">主题 / 梗</label>
+        <input id="theme" type="text" placeholder="例：宝宝把爸爸的袜子当帽子戴" value="宝宝把爸爸的袜子当帽子戴">
+      </div>
+      <div>
+        <label for="char">主角设定</label>
+        <select id="char">
+          <option value="1岁女宝">1 岁女宝</option>
+          <option value="2岁男宝">2 岁男宝</option>
+          <option value="3岁男宝">3 岁男宝</option>
+          <option value="1岁半女宝" selected>1 岁半女宝</option>
+        </select>
+      </div>
+      <div>
+        <label for="style">风格调性</label>
+        <select id="style">
+          <option value="温馨搞笑">温馨搞笑</option>
+          <option value="毒舌反转">毒舌反转</option>
+          <option value="奶凶霸气">奶凶霸气</option>
+          <option value="萌系治愈">萌系治愈</option>
+        </select>
+      </div>
+      <div>
+        <label for="lang">台词语言</label>
+        <select id="lang">
+          <option value="中式英文">中式英文（散装英语）</option>
+          <option value="纯中文">纯中文</option>
+          <option value="中英混搭">中英混搭</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-main" id="gen">生成脚本</button>
+      <button class="btn-ghost" id="rand">随机来一个</button>
+      <button class="btn-ghost" id="export">导出全部</button>
+    </div>
+  </div>
+
+  <div class="panel" id="result">
+    <div class="empty">点击上方「生成脚本」，这里会显示完整脚本</div>
+  </div>
+
+  <footer>
+    纯前端工具 · 数据不出本机 · <a href="https://github.com/taolaikun/kids-shortvideo-script-gen">GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var THEME_POOL = [
+    '宝宝把爸爸的袜子当帽子戴',
+    '宝宝偷吃辣椒被辣哭还要嘴硬',
+    '宝宝把妈妈的口红涂满脸',
+    '宝宝把猫粮当零食被当场抓获',
+    '宝宝第一次看到雪',
+    '宝宝不肯睡觉非要讲故事',
+    '宝宝把遥控器藏起来不给爸爸看球',
+    '宝宝学大人打电话谈生意',
+    '宝宝把积木搭成高楼然后一脚踹倒',
+    '宝宝把洗澡水泼到爸爸身上',
+    '宝宝第一次自己穿鞋穿反了',
+    '宝宝看到镜子里自己愣住三秒',
+    '宝宝抢小狗的玩具被追着跑',
+    '宝宝把面条挂头上当头发',
+    '宝宝听到音乐开始扭屁股'
+  ];
+
+  var NAMES = ['Lulu', 'Nana', 'CoCo', 'Dodo', 'Momo'];
+
+  var SHOTS = [
+    '手持 home-video 视角，中景平拍，镜头轻微晃动',
+    '手持近景，微微仰角，跟随宝宝的视线轻微推近',
+    '固定机位中景，画面略带自然抖动，像家人随手拍的',
+    '手持跟拍，镜头随宝宝移动轻晃，浅景深虚化背景'
+  ];
+
+  var LIGHTS = [
+    '奶油白墙 + 浅棕木地板，午后窗光从左侧斜入，柔和暖调',
+    '米白客厅，顶部暖光 + 窗外自然光，整体淡粉调',
+    '浅色卧室，窗帘半透，柔和漫射光，画面明亮通透',
+    '客厅地毯，暖黄落地灯 + 窗边自然光，奶油色调'
+  ];
+
+  function pick(arr, seed) {
+    var i = (seed === undefined) ? Math.floor(Math.random() * arr.length) : seed % arr.length;
+    return arr[i];
+  }
+
+  function hash(str) {
+    var h = 0, i;
+    for (i = 0; i < str.length; i++) {
+      h = ((h << 5) - h) + str.charCodeAt(i);
+      h = h & h;
+    }
+    return Math.abs(h);
+  }
+
+  /* ---------- 台词生成 ---------- */
+  function makeLines(theme, char, style, lang) {
+    var name = pick(NAMES, hash(theme));
+    var en = (lang === '纯中文') ? false : true;
+    var sets = [];
+
+    if (style === '毒舌反转') {
+      sets = [
+        { who: '宝宝', cn: '这是宝宝的帽子。', en: 'This is baby hat.' },
+        { who: '大人', cn: '那是袜子……', en: 'That... is a sock.' },
+        { who: '宝宝', cn: '我说是帽子就是帽子。', en: 'I say hat, it is hat.' },
+        { who: '大人', cn: '行行行，你说得都对。', en: 'Okay okay, you win.' },
+        { who: '宝宝', cn: 'You can you do, no can no BB.', en: 'You can you do, no can no BB.' }
+      ];
+    } else if (style === '奶凶霸气') {
+      sets = [
+        { who: '大人', cn: '宝宝，把东西还给我好不好？', en: 'Baby, can you give it back?' },
+        { who: '宝宝', cn: '不给。', en: 'No.' },
+        { who: '大人', cn: '为什么呀？', en: 'Why not?' },
+        { who: '宝宝', cn: '这是我的。', en: 'It is mine.' },
+        { who: '大人', cn: '……好的，你的。', en: '...Fine. Yours.' }
+      ];
+    } else if (style === '萌系治愈') {
+      sets = [
+        { who: '宝宝', cn: '妈妈你看！', en: 'Mommy look!' },
+        { who: '大人', cn: '哇，好厉害呀。', en: 'Wow, so great!' },
+        { who: '宝宝', cn: '宝宝做的。', en: 'Baby did it.' },
+        { who: '大人', cn: '嗯，宝宝真棒。', en: 'Yes, baby is great.' },
+        { who: '宝宝', cn: '爱你哟。', en: 'Love you.' }
+      ];
+    } else {
+      sets = [
+        { who: '宝宝', cn: '爸爸你看这个！', en: 'Daddy look at this!' },
+        { who: '大人', cn: '这……这是什么呀？', en: 'What... what is that?' },
+        { who: '宝宝', cn: '是帽子！', en: 'It is a hat!' },
+        { who: '大人', cn: '那是我的袜子啊……', en: 'That is my sock...' },
+        { who: '宝宝', cn: '一样的，都是布做的。', en: 'Same same, both cloth.' }
+      ];
+    }
+
+    // 中英混搭：只保留部分英文
+    if (lang === '中英混搭') {
+      sets = sets.map(function (l, i) {
+        return { who: l.who, cn: l.cn, en: (i % 2 === 0) ? l.en : '(中文)' };
+      });
+    }
+    if (!en) {
+      sets = sets.map(function (l) { return { who: l.who, cn: l.cn, en: '' }; });
+    }
+    return sets;
+  }
+
+  /* ---------- 节拍表 ---------- */
+  function makeBeats(lines, theme) {
+    return [
+      { t: '0-3s',   note: '开场钩子：直接给最夸张的画面 —— ' + theme, shot: '近景，宝宝动作定格' },
+      { t: '3-6s',   note: '金句在这里：' + (lines[2] ? lines[2].cn : ''), shot: '中景，宝宝正脸特写' },
+      { t: '6-9s',   note: '大人反应，制造反差', shot: '过肩镜头，拍到大人表情' },
+      { t: '9-12s',  note: '宝宝补刀，情绪推到顶', shot: '手持跟拍，轻微晃动' },
+      { t: '12-15s', note: '结尾反转 / 笑点收尾，留 0.5 秒余韵', shot: '固定机位，宝宝背影或侧脸' }
+    ];
+  }
+
+  /* ---------- 中英提示词 ---------- */
+  function makePromptCN(theme, char, style, shot, light) {
+    return '【场景】家庭客厅实景，生活化，无摆拍感\n' +
+      '【角色】' + char + '，圆脸大眼睛，表情夸张生动\n' +
+      '【动作】' + theme + '\n' +
+      '【镜头】' + shot + '\n' +
+      '【光线】' + light + '\n' +
+      '【情绪】' + style + '，萌感十足，节奏轻快\n' +
+      '【风格】真实家庭录像质感，手持拍摄，画面自然微抖，无字幕无 BGM\n' +
+      '【时长】15 秒，一镜到底为主';
+  }
+
+  function makePromptEN(theme, char, style, shot) {
+    var charEN = {
+      '1岁女宝': '1-year-old baby girl',
+      '2岁男宝': '2-year-old baby boy',
+      '3岁男宝': '3-year-old baby boy',
+      '1岁半女宝': '1.5-year-old baby girl'
+    }[char] || 'toddler';
+    var styleEN = {
+      '温馨搞笑': 'warm and funny',
+      '毒舌反转': 'sassy with a twist',
+      '奶凶霸气': 'cute but fierce',
+      '萌系治愈': 'adorable and heartwarming'
+    }[style] || 'warm and funny';
+
+    return 'Scene: A real family living room, candid home-video feel, no staged look.\n' +
+      'Character: A ' + charEN + ' with a round face and big expressive eyes.\n' +
+      'Action: (describe the action in English) ' + theme + '\n' +
+      'Camera: Handheld, natural micro-shake, eye-level medium shot, shallow depth of field.\n' +
+      'Lighting: Soft window light, cream and warm-tone interior, gentle highlights.\n' +
+      'Mood: ' + styleEN + ', upbeat pacing.\n' +
+      'Style: Authentic home-video footage, no subtitles, no background music.\n' +
+      'Duration: 15 seconds, prefer a single continuous take.';
+  }
+
+  /* ---------- 渲染 ---------- */
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function render(theme, char, style, lang) {
+    var seed = hash(theme + char + style);
+    var shot = pick(SHOTS, seed);
+    var light = pick(LIGHTS, seed >> 2);
+    var lines = makeLines(theme, char, style, lang);
+    var beats = makeBeats(lines, theme);
+    var cn = makePromptCN(theme, char, style, shot, light);
+    var en = makePromptEN(theme, char, style, shot);
+
+    var linesHtml = lines.map(function (l) {
+      return '<tr><td>' + esc(l.who) + '</td><td>' + esc(l.cn) + '</td><td>' +
+        (l.en ? esc(l.en) : '—') + '</td></tr>';
+    }).join('');
+
+    var beatsHtml = beats.map(function (b) {
+      return '<tr><td>' + esc(b.t) + '</td><td>' + esc(b.note) + '</td><td>' + esc(b.shot) + '</td></tr>';
+    }).join('');
+
+    document.getElementById('result').innerHTML =
+      '<div class="out-head"><h2>' + esc(theme) + '</h2>' +
+      '<span class="meta">' + esc(char) + ' · ' + esc(style) + ' · 15s</span></div>' +
+
+      '<div class="block"><h3>中文提示词<button class="copy" data-target="p1">复制</button></h3>' +
+      '<pre id="p1">' + esc(cn) + '</pre></div>' +
+
+      '<div class="block en"><h3>English Prompt<button class="copy" data-target="p2">复制</button></h3>' +
+      '<pre id="p2">' + esc(en) + '</pre></div>' +
+
+      '<div class="block"><h3>台词表（对口型用）<button class="copy" data-target="t1">复制</button></h3>' +
+      '<table id="t1"><thead><tr><th>角色</th><th>中文</th><th>English</th></tr></thead>' +
+      '<tbody>' + linesHtml + '</tbody></table></div>' +
+
+      '<div class="block"><h3>秒级节拍表<button class="copy" data-target="t2">复制</button></h3>' +
+      '<table id="t2"><thead><tr><th>时间</th><th>内容</th><th>镜头</th></tr></thead>' +
+      '<tbody>' + beatsHtml + '</tbody></table></div>';
+
+    bindCopy();
+  }
+
+  /* ---------- 复制 ---------- */
+  function bindCopy() {
+    var btns = document.querySelectorAll('.copy');
+    Array.prototype.forEach.call(btns, function (btn) {
+      btn.onclick = function () {
+        var el = document.getElementById(btn.getAttribute('data-target'));
+        if (!el) return;
+        var text = el.innerText || el.textContent;
+        var done = function () {
+          var old = btn.textContent;
+          btn.textContent = '已复制 ✓';
+          setTimeout(function () { btn.textContent = old; }, 1200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+        } else {
+          fallback(text, done);
+        }
+      };
+    });
+  }
+
+  function fallback(text, cb) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); cb(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- 导出 ---------- */
+  function exportAll() {
+    var theme = document.getElementById('theme').value.trim();
+    if (!theme) { alert('先填个主题吧'); return; }
+    var text = document.getElementById('result').innerText;
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '萌娃脚本-' + theme.slice(0, 10) + '.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* ---------- 事件 ---------- */
+  document.getElementById('gen').onclick = function () {
+    var theme = document.getElementById('theme').value.trim();
+    if (!theme) { alert('先填个主题吧'); return; }
+    render(
+      theme,
+      document.getElementById('char').value,
+      document.getElementById('style').value,
+      document.getElementById('lang').value
+    );
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  document.getElementById('rand').onclick = function () {
+    document.getElementById('theme').value = pick(THEME_POOL);
+    document.getElementById('gen').click();
+  };
+
+  document.getElementById('export').onclick = exportAll;
+
+  // 首次自动生成，让人一打开就看到效果
+  document.getElementById('gen').click();
+})();
+</script>
+</body>
+</html>
